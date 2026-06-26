@@ -161,12 +161,13 @@ export function SelectFilter({ label, options, value, onChange }: { label: strin
   );
 }
 
-export function EmptyState({ icon, title, description, action }: { icon: string; title: string; description?: string; action?: { label: string; onClick: () => void } }) {
+export function EmptyState({ icon, title, description, message, action }: { icon: string; title: string; description?: string; message?: string; action?: { label: string; onClick: () => void } }) {
+  const text = description || message;
   return (
     <div className="text-center py-16 animate-fade-in">
       <span className="text-6xl block mb-4">{icon}</span>
       <h3 className="text-lg font-semibold text-gray-700 mb-2">{title}</h3>
-      {description && <p className="text-gray-500 mb-4">{description}</p>}
+      {text && <p className="text-gray-500 mb-4">{text}</p>}
       {action && <button className="btn btn-primary" onClick={action.onClick}>{action.label}</button>}
     </div>
   );
