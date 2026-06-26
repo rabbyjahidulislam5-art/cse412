@@ -13,7 +13,7 @@ export default function SignUpPage() {
   const validate = () => {
     const e: Record<string, string> = {};
     if (!/^\d{4}-\d+-\d+-\d+$/.test(form.studentId)) e.studentId = 'Format: YYYY-S-DDD';
-    if (!form.email.endsWith('@ewubd.edu')) e.email = 'Use university email';
+    if (!form.email.endsWith('@ewubd.edu') && !form.email.endsWith('@std.ewubd.edu')) e.email = 'Use university email';
     if (!/^(?:\+880|01)\d{9}$/.test(form.phone)) e.phone = 'Invalid BD phone';
     if (form.password.length < 8) e.password = 'Min 8 characters';
     if (!/[A-Z]/.test(form.password)) e.password += ', uppercase';

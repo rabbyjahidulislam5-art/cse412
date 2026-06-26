@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const registerSchema = z.object({
   studentId: z.string().regex(/^\d{4}-\d+-\d+-\d+$/, 'Invalid Student ID format'),
-  email: z.string().email().endsWith('@ewubd.edu', 'Must use university email'),
+  email: z.string().email().refine(val => val.endsWith('@ewubd.edu') || val.endsWith('@std.ewubd.edu'), { message: 'Must use university email' }),
   phone: z.string().regex(/^(?:\+880|01)\d{9}$/, 'Invalid BD phone number'),
   fullName: z.string().min(3).max(255),
   password: z.string().min(8).regex(/[A-Z]/, 'Must contain uppercase').regex(/[a-z]/, 'Must contain lowercase').regex(/\d/, 'Must contain digit').regex(/[!@#$%^&*]/, 'Must contain special character'),
