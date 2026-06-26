@@ -12,6 +12,12 @@ const transporter = nodemailer.createTransport({
 });
 
 export async function sendEmail(to: string, subject: string, html: string): Promise<void> {
+  if (!config.email.smtp.user || !config.email.smtp.pass) {
+    console.log(`[EMAIL SIMULATION] To: ${to} | Subject: ${subject}`);
+    console.log(`[EMAIL CONTENT]\n${html}`);
+    return;
+  }
+  
   await transporter.sendMail({
     from: config.email.from,
     to,
