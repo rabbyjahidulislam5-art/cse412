@@ -19,7 +19,8 @@ export class AuthController {
     if (exists) return error(res, 'DUPLICATE', 'Student ID, email, or phone already registered', 409);
 
     const passwordHash = await hashPassword(password);
-    const otp = generateOTP();
+    // Use 123456 for testing if SMTP is not configured, otherwise generate a random one
+    const otp = (!config.email.smtp.user || !config.email.smtp.pass) ? '123456' : generateOTP();
     const otpHash = hashOTP(otp);
 
     const user = await prisma.user.create({
