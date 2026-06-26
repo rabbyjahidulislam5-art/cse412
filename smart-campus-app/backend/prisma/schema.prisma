@@ -242,15 +242,15 @@ model User {
 model Wallet {
   id                String       @id @default(uuid())
   userId            String       @unique @map("user_id")
-  balance           BigInt       @default(0)
-  pendingBalance    BigInt       @default(0) @map("pending_balance")
-  heldBalance       BigInt       @default(0) @map("held_balance")
+  balance           Int       @default(0)
+  pendingBalance    Int       @default(0) @map("pending_balance")
+  heldBalance       Int       @default(0) @map("held_balance")
   status            WalletStatus @default(ACTIVE)
-  dailyTopupUsed    BigInt       @default(0) @map("daily_topup_used")
+  dailyTopupUsed    Int       @default(0) @map("daily_topup_used")
   dailyTopupResetAt DateTime     @default(now()) @map("daily_topup_reset_at") @db.Date
-  dailySpendUsed   BigInt       @default(0) @map("daily_spend_used")
+  dailySpendUsed   Int       @default(0) @map("daily_spend_used")
   dailySpendResetAt DateTime    @default(now()) @map("daily_spend_reset_at") @db.Date
-  maxBalance        BigInt      @default(10000000) @map("max_balance")
+  maxBalance        Int      @default(10000000) @map("max_balance")
   createdAt         DateTime    @default(now()) @map("created_at")
   updatedAt         DateTime    @updatedAt @map("updated_at")
 
@@ -268,9 +268,9 @@ model Transaction {
   walletId        String              @map("wallet_id")
   type            TransactionType
   direction       TransactionDirection
-  amount          BigInt
-  balanceBefore   BigInt              @map("balance_before")
-  balanceAfter    BigInt              @map("balance_after")
+  amount          Int
+  balanceBefore   Int              @map("balance_before")
+  balanceAfter    Int              @map("balance_after")
   status          TransactionStatus   @default(PENDING)
   gateway         String?             @db.VarChar(50)
   gatewayRef      String?             @map("gateway_reference") @db.VarChar(255)
@@ -302,9 +302,9 @@ model Fine {
   userId                String       @map("user_id")
   type                  FineType
   description           String       @db.Text
-  baseAmount            BigInt       @map("base_amount")
-  accumulatedAmount     BigInt       @map("accumulated_amount")
-  dailyRate             BigInt?      @map("daily_rate")
+  baseAmount            Int       @map("base_amount")
+  accumulatedAmount     Int       @map("accumulated_amount")
+  dailyRate             Int?      @map("daily_rate")
   status                FineStatus   @default(ACTIVE)
   paymentTransactionId  String?      @map("payment_transaction_id")
   bookIssueId           String?      @unique @map("book_issue_id")
@@ -387,9 +387,9 @@ model Merchant {
   contactPhone      String?       @map("contact_phone") @db.VarChar(20)
   settlementAccount String?       @map("settlement_account") @db.VarChar(255)
   status            MerchantStatus @default(PENDING)
-  dailyVolume       BigInt        @default(0) @map("daily_volume")
-  pendingBalance    BigInt        @default(0) @map("pending_balance")
-  availableBalance   BigInt        @default(0) @map("available_balance")
+  dailyVolume       Int        @default(0) @map("daily_volume")
+  pendingBalance    Int        @default(0) @map("pending_balance")
+  availableBalance   Int        @default(0) @map("available_balance")
   logo              String?
   createdAt         DateTime      @default(now()) @map("created_at")
   updatedAt         DateTime      @updatedAt @map("updated_at")
@@ -406,7 +406,7 @@ model MerchantTransaction {
   transactionId     String           @unique @map("transaction_id")
   status            TransactionStatus @default(PENDING)
   settledAt         DateTime?        @map("settled_at")
-  settlementAmount  BigInt?          @map("settlement_amount")
+  settlementAmount  Int?          @map("settlement_amount")
   createdAt         DateTime         @default(now()) @map("created_at")
 
   merchant          Merchant         @relation(fields: [merchantId], references: [id])
@@ -420,7 +420,7 @@ model MerchantTransaction {
 model PaymentIntent {
   id              String                @id @default(uuid())
   userId          String                @map("user_id")
-  amount          BigInt
+  amount          Int
   gateway         String                @db.VarChar(50)
   status          PaymentIntentStatus   @default(PENDING)
   gatewayRef      String?               @map("gateway_reference") @db.VarChar(255)
@@ -476,8 +476,8 @@ model TuitionRecord {
   id                String   @id @default(uuid())
   studentId         String   @map("student_id")
   semester          Int
-  totalAmount       BigInt   @map("total_amount")
-  paidAmount        BigInt   @default(0) @map("paid_amount")
+  totalAmount       Int   @map("total_amount")
+  paidAmount        Int   @default(0) @map("paid_amount")
   installmentsJson  Json?    @map("installments_json")
   status            String   @default("PENDING")
   createdAt         DateTime @default(now()) @map("created_at")
@@ -493,7 +493,7 @@ model Installment {
   id                String    @id @default(uuid())
   tuitionRecordId   String    @map("tuition_record_id")
   installmentNo     Int       @map("installment_no")
-  amount            BigInt
+  amount            Int
   dueDate           DateTime  @map("due_date") @db.Date
   paidAt            DateTime? @map("paid_at")
   transactionId     String?   @map("transaction_id")
@@ -634,9 +634,9 @@ model FineAppeal {
 
 model FinePolicy {
   id              String   @id @default(uuid())
-  libraryDailyRate BigInt   @default(500) @map("library_daily_rate") // 5 BDT = 500 paisa
+  libraryDailyRate Int   @default(500) @map("library_daily_rate") // 5 BDT = 500 paisa
   gracePeriodDays  Int      @default(0) @map("grace_period_days")
-  maxFineCap      BigInt?  @map("max_fine_cap")
+  maxFineCap      Int?  @map("max_fine_cap")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   @@map("fine_policies")
