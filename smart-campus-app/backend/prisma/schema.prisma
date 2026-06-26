@@ -307,7 +307,7 @@ model Fine {
   dailyRate             BigInt?      @map("daily_rate")
   status                FineStatus   @default(ACTIVE)
   paymentTransactionId  String?      @map("payment_transaction_id")
-  bookIssueId           String?      @map("book_issue_id")
+  bookIssueId           String?      @unique @map("book_issue_id")
   createdBy             String       @map("created_by")
   paidAt                DateTime?    @map("paid_at")
   waivedAt              DateTime?    @map("waived_at")
@@ -360,7 +360,6 @@ model BookIssue {
   returnedAt        DateTime?      @map("returned_at")
   returnedBy        String?        @map("returned_by")
   conditionOnReturn BookCondition? @map("condition_on_return")
-  fineId            String?        @map("fine_id")
   reminderCount     Int            @default(0) @map("reminder_count")
   lastReminderAt    DateTime?      @map("last_reminder_at")
 
@@ -368,7 +367,7 @@ model BookIssue {
   book              Book           @relation(fields: [bookId], references: [id])
   issuedUser        User           @relation("IssuedBy", fields: [issuedBy], references: [id])
   returnedUser      User?          @relation("ReturnedBy", fields: [returnedBy], references: [id])
-  fine              Fine?          @relation(fields: [fineId], references: [id])
+  fine              Fine?
 
   @@index([studentId])
   @@index([bookId])
@@ -404,7 +403,7 @@ model Merchant {
 model MerchantTransaction {
   id                String           @id @default(uuid())
   merchantId        String           @map("merchant_id")
-  transactionId     String           @map("transaction_id")
+  transactionId     String           @unique @map("transaction_id")
   status            TransactionStatus @default(PENDING)
   settledAt         DateTime?        @map("settled_at")
   settlementAmount  BigInt?          @map("settlement_amount")
@@ -427,9 +426,10 @@ model PaymentIntent {
   gatewayRef      String?               @map("gateway_reference") @db.VarChar(255)
   expiresAt       DateTime             @map("expires_at")
   completedAt      DateTime?            @map("completed_at")
+  transactionId   String?               @unique @map("transaction_id")
   createdAt       DateTime              @default(now()) @map("created_at")
 
-  transaction     Transaction?
+  transaction     Transaction?          @relation(fields: [transactionId], references: [id])
 
   @@map("payment_intents")
 }
