@@ -23,7 +23,7 @@ export class AuthController {
     const otpHash = hashOTP(otp);
 
     const user = await prisma.user.create({
-      data: { studentId, email, phone, fullName, passwordHash, department, semester, status: 'PENDING' },
+      data: { studentId, email, phone, fullName, passwordHash, department, semester: parseInt(semester, 10), role: 'STUDENT', status: 'PENDING' },
     });
 
     await prisma.oTPRecord.create({
