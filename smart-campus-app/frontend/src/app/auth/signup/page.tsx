@@ -31,7 +31,9 @@ export default function SignUpPage() {
       const res = await api.post('/auth/register', { ...form, semester: form.semester ? parseInt(form.semester) : undefined });
       if (res.data.data.token) { localStorage.setItem('access_token', res.data.data.token); router.push('/auth/verify-otp'); }
     } catch (err: any) {
-      setErrors({ form: err.response?.data?.error?.message || 'Registration failed' });
+      console.error("REGISTRATION ERROR:", err);
+      const errMsg = err.response?.data?.error?.message || err.message || 'Registration failed';
+      setErrors({ form: errMsg });
     } finally { setLoading(false); }
   };
 
