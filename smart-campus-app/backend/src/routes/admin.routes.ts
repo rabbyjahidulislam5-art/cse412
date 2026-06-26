@@ -17,7 +17,7 @@ router.get('/transactions', authenticate, requireRole('ADMIN'), controller.getTr
 router.post('/transaction/:id/override', authenticate, requireRole('ADMIN'), controller.overrideTransaction.bind(controller));
 router.get('/fines', authenticate, requireRole('ADMIN'), controller.getAllFines.bind(controller));
 router.post('/fines', authenticate, requireRole('ADMIN'), validate(addFineSchema), controller.addFine.bind(controller));
-router.post('/fines/:id/waive', authenticate, requireRole('ADMIN'), validate(waiveSchema), controller.waiveFine.bind(controller));
+router.post('/fines/:id/waive', authenticate, requireRole('ADMIN'), validate(waiveFineSchema), controller.waiveFine.bind(controller));
 router.get('/wallets', authenticate, requireRole('ADMIN'), controller.getWallets.bind(controller));
 router.get('/audit', authenticate, requireRole('ADMIN'), controller.getAuditLogs.bind(controller));
 router.get('/security', authenticate, requireRole('ADMIN'), controller.getSecurityEvents.bind(controller));
