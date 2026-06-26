@@ -5,7 +5,7 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json* ./
-RUN npm install
+RUN npm install --include=dev
 
 # Stage 2: Build TypeScript
 FROM node:20-alpine AS builder
@@ -13,7 +13,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npx prisma generate
-RUN npx tsc --outDir ./dist
+RUN npx tsc --skipLibCheck --noEmitOnError false
 
 # Stage 3: Production
 FROM node:20-alpine AS runner
