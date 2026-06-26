@@ -6,7 +6,7 @@ import { DataTable, SearchBar, SelectFilter, Pagination, LoadingSkeleton, Badge,
 import { useToast, useDebounce } from '@/components/hooks';
 import api from '@/lib/api';
 import { formatDate, formatBDT } from '@/lib/utils';
-import adminNav from './nav';
+import adminNav from '../nav';
 
 export default function StudentsPage() {
   const { user, logout } = useAuth();

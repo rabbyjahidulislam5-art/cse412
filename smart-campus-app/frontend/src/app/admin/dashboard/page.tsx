@@ -6,7 +6,7 @@ import { KPICard, LoadingSkeleton, Badge } from '@/components/UI';
 import { useCountUp } from '@/components/hooks';
 import api from '@/lib/api';
 import { formatBDT, formatDateTime } from '@/lib/utils';
-import adminNav from './nav';
+import adminNav from '../nav';
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();

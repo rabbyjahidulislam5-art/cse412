@@ -5,7 +5,7 @@ import { useAuth } from '@/components/AuthProvider';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useToast } from '@/components/hooks';
 import api from '@/lib/api';
-import studentNav from './nav';
+import studentNav from '../nav';
 
 export default function TopUpPage() {
   const router = useRouter();
