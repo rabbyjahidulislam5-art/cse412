@@ -1,0 +1,643 @@
+// Smart Campus App - Complete Database Schema
+// PostgreSQL 16 + Prisma ORM
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============ ENUMS ============
+
+enum UserRole {
+  STUDENT
+  ADMIN
+  LIBRARY_STAFF
+  SHOP_OWNER
+}
+
+enum UserStatus {
+  PENDING
+  KYC_PENDING
+  ACTIVE
+  SUSPENDED
+  LOCKED
+}
+
+enum KYCStatus {
+  PENDING
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum WalletStatus {
+  ACTIVE
+  SUSPENDED
+  FROZEN
+  CLOSED
+}
+
+enum TransactionType {
+  TOP_UP
+  WITHDRAWAL
+  PAYMENT
+  TRANSFER_OUT
+  TRANSFER_IN
+  FINE_PAYMENT
+  REFUND
+  ADJUSTMENT
+}
+
+enum TransactionDirection {
+  CREDIT
+  DEBIT
+}
+
+enum TransactionStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REVERSED
+}
+
+enum FineType {
+  LIBRARY
+  DISCIPLINARY
+  TUITION_LATE
+  OTHER
+}
+
+enum FineStatus {
+  ACTIVE
+  PAID
+  WAIVED
+  APPEALED
+  ESCALATED
+}
+
+enum BookCondition {
+  GOOD
+  MINOR_DAMAGE
+  MAJOR_DAMAGE
+  LOST
+}
+
+enum PaymentIntentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  EXPIRED
+}
+
+enum AdvisingBlockReason {
+  UNPAID_LIBRARY_FINE
+  UNPAID_DISCIPLINARY_FINE
+  TUITION_OVERDUE
+  PENDING_KYC
+  ADMIN_HOLD
+}
+
+enum NotificationType {
+  AUTH
+  WALLET
+  FINE
+  ADVISING
+  LIBRARY
+  PAYMENT
+  SECURITY
+  SYSTEM
+  SUPPORT
+  SETTLEMENT
+}
+
+enum NotificationChannel {
+  PUSH
+  EMAIL
+  SMS
+  IN_APP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  READ
+}
+
+enum SecurityEventType {
+  LOGIN_SUCCESS
+  LOGIN_FAILURE
+  ACCOUNT_LOCKOUT
+  ACCOUNT_UNLOCK
+  PASSWORD_CHANGE
+  TWO_FACTOR_ENABLED
+  TWO_FACTOR_DISABLED
+  SESSION_REVOKED
+  SUSPICIOUS_TRANSACTION
+  RATE_LIMIT_EXCEEDED
+  OTP_FAILURE
+  KYC_REVIEW
+  ROLE_CHANGE
+}
+
+enum SecuritySeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum SupportTicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_USER
+  RESOLVED
+  CLOSED
+}
+
+enum SupportTicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum AppealStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  ESCALATED
+}
+
+enum MerchantStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  CLOSED
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  PROCESSING
+  COMPLETED
+  REJECTED
+}
+
+// ============ USER & IDENTITY ============
+
+model User {
+  id              String     @id @default(uuid())
+  studentId       String     @unique @map("student_id") @db.VarChar(20)
+  email           String     @unique @db.VarChar(255)
+  phone           String     @unique @db.VarChar(20)
+  fullName        String     @map("full_name") @db.VarChar(255)
+  passwordHash    String     @map("password_hash") @db.VarChar(255)
+  role            UserRole
+  status          UserStatus @default(PENDING)
+  kycStatus       KYCStatus  @default(PENDING) @map("kyc_status")
+  department      String?    @db.VarChar(100)
+  semester        Int?
+  profilePhoto    String?    @map("profile_photo")
+  failedLoginCount Int       @default(0) @map("failed_login_count")
+  lockedUntil     DateTime?  @map("locked_until")
+  lastLoginAt     DateTime?  @map("last_login_at")
+  totpSecret      String?    @map("totp_secret")
+  totpEnabled     Boolean    @default(false) @map("totp_enabled")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+  deletedAt       DateTime?  @map("deleted_at")
+
+  // Relations
+  wallet          Wallet?
+  fines           Fine[]
+  bookIssues      BookIssue[]
+  initiatedTransactions Transaction[] @relation("InitiatedBy")
+  receivedTransactions Transaction[] @relation("ReceivedBy")
+  kycDocuments    KYCDocument[]
+  notifications    Notification[]
+  auditLogs       AuditLog[]
+  securityEvents  SecurityEvent[]
+  sessions        Session[]
+  otpRecords      OTPRecord[]
+  supportTickets  SupportTicket[]
+  finesCreated    Fine[]      @relation("CreatedBy")
+  merchant        Merchant?
+  booksIssued     BookIssue[] @relation("IssuedBy")
+  booksReturned   BookIssue[] @relation("ReturnedBy")
+  fineAppeals     FineAppeal[]
+  tuitionRecords  TuitionRecord[]
+  advisingClearances AdvisingClearance[]
+
+  @@map("users")
+}
+
+// ============ WALLET ============
+
+model Wallet {
+  id                String       @id @default(uuid())
+  userId            String       @unique @map("user_id")
+  balance           BigInt       @default(0)
+  pendingBalance    BigInt       @default(0) @map("pending_balance")
+  heldBalance       BigInt       @default(0) @map("held_balance")
+  status            WalletStatus @default(ACTIVE)
+  dailyTopupUsed    BigInt       @default(0) @map("daily_topup_used")
+  dailyTopupResetAt DateTime     @default(now()) @map("daily_topup_reset_at") @db.Date
+  dailySpendUsed   BigInt       @default(0) @map("daily_spend_used")
+  dailySpendResetAt DateTime    @default(now()) @map("daily_spend_reset_at") @db.Date
+  maxBalance        BigInt      @default(10000000) @map("max_balance")
+  createdAt         DateTime    @default(now()) @map("created_at")
+  updatedAt         DateTime    @updatedAt @map("updated_at")
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions  Transaction[]
+
+  @@map("wallets")
+}
+
+// ============ TRANSACTIONS ============
+
+model Transaction {
+  id              String              @id @default(uuid())
+  referenceId     String              @unique @map("reference_id") @db.VarChar(64)
+  walletId        String              @map("wallet_id")
+  type            TransactionType
+  direction       TransactionDirection
+  amount          BigInt
+  balanceBefore   BigInt              @map("balance_before")
+  balanceAfter    BigInt              @map("balance_after")
+  status          TransactionStatus   @default(PENDING)
+  gateway         String?             @db.VarChar(50)
+  gatewayRef      String?             @map("gateway_reference") @db.VarChar(255)
+  relatedUserId   String?             @map("related_user_id")
+  description     String              @db.Text
+  metadata        Json?
+  initiatedBy     String              @map("initiated_by")
+  flagged         Boolean             @default(false)
+  flagReason      String?             @map("flag_reason")
+  createdAt       DateTime            @default(now()) @map("created_at")
+
+  wallet         Wallet              @relation(fields: [walletId], references: [id])
+  initiatedUser  User                @relation("InitiatedBy", fields: [initiatedBy], references: [id])
+  relatedUser    User?               @relation("ReceivedBy", fields: [relatedUserId], references: [id])
+  fines          Fine[]
+  merchantTx     MerchantTransaction?
+  paymentIntent  PaymentIntent?
+
+  @@index([walletId, createdAt])
+  @@index([status])
+  @@index([createdAt])
+  @@map("transactions")
+}
+
+// ============ FINES ============
+
+model Fine {
+  id                    String       @id @default(uuid())
+  userId                String       @map("user_id")
+  type                  FineType
+  description           String       @db.Text
+  baseAmount            BigInt       @map("base_amount")
+  accumulatedAmount     BigInt       @map("accumulated_amount")
+  dailyRate             BigInt?      @map("daily_rate")
+  status                FineStatus   @default(ACTIVE)
+  paymentTransactionId  String?      @map("payment_transaction_id")
+  bookIssueId           String?      @map("book_issue_id")
+  createdBy             String       @map("created_by")
+  paidAt                DateTime?    @map("paid_at")
+  waivedAt              DateTime?    @map("waived_at")
+  waiverReason          String?      @map("waiver_reason")
+  createdAt             DateTime     @default(now()) @map("created_at")
+  updatedAt             DateTime     @updatedAt @map("updated_at")
+
+  user                  User         @relation(fields: [userId], references: [id])
+  paymentTransaction    Transaction? @relation(fields: [paymentTransactionId], references: [id])
+  bookIssue             BookIssue?   @relation(fields: [bookIssueId], references: [id])
+  createdUser           User         @relation("CreatedBy", fields: [createdBy], references: [id])
+  appeals              FineAppeal[]
+
+  @@index([userId, status])
+  @@index([createdAt])
+  @@map("fines")
+}
+
+// ============ BOOKS ============
+
+model Book {
+  id            String   @id @default(uuid())
+  isbn          String   @unique @db.VarChar(20)
+  title         String   @db.VarChar(255)
+  author        String   @db.VarChar(255)
+  publisher     String?  @db.VarChar(255)
+  year          Int?
+  genre         String?
+  quantity      Int      @default(1)
+  availableQty  Int      @default(1) @map("available_qty")
+  locationCode  String?  @map("location_code") @db.VarChar(50)
+  category      String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  issues        BookIssue[]
+
+  @@map("books")
+}
+
+// ============ BOOK ISSUES ============
+
+model BookIssue {
+  id                String         @id @default(uuid())
+  studentId         String         @map("student_id")
+  bookId            String         @map("book_id")
+  issuedBy          String         @map("issued_by")
+  issuedAt          DateTime       @default(now()) @map("issued_at")
+  dueDate           DateTime       @map("due_date") @db.Date
+  returnedAt        DateTime?      @map("returned_at")
+  returnedBy        String?        @map("returned_by")
+  conditionOnReturn BookCondition? @map("condition_on_return")
+  fineId            String?        @map("fine_id")
+  reminderCount     Int            @default(0) @map("reminder_count")
+  lastReminderAt    DateTime?      @map("last_reminder_at")
+
+  student           User           @relation(fields: [studentId], references: [id])
+  book              Book           @relation(fields: [bookId], references: [id])
+  issuedUser        User           @relation("IssuedBy", fields: [issuedBy], references: [id])
+  returnedUser      User?          @relation("ReturnedBy", fields: [returnedBy], references: [id])
+  fine              Fine?          @relation(fields: [fineId], references: [id])
+
+  @@index([studentId])
+  @@index([bookId])
+  @@index([returnedAt], map: "idx_unreturned")
+  @@map("book_issues")
+}
+
+// ============ MERCHANTS ============
+
+model Merchant {
+  id                String        @id @default(uuid())
+  userId            String        @unique @map("user_id")
+  shopName          String        @map("shop_name") @db.VarChar(255)
+  category          String?
+  location          String?
+  qrCode            String?       @map("qr_code")
+  contactPhone      String?       @map("contact_phone") @db.VarChar(20)
+  settlementAccount String?       @map("settlement_account") @db.VarChar(255)
+  status            MerchantStatus @default(PENDING)
+  dailyVolume       BigInt        @default(0) @map("daily_volume")
+  pendingBalance    BigInt        @default(0) @map("pending_balance")
+  availableBalance   BigInt        @default(0) @map("available_balance")
+  logo              String?
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  user              User          @relation(fields: [userId], references: [id])
+  transactions      MerchantTransaction[]
+
+  @@map("merchants")
+}
+
+model MerchantTransaction {
+  id                String           @id @default(uuid())
+  merchantId        String           @map("merchant_id")
+  transactionId     String           @map("transaction_id")
+  status            TransactionStatus @default(PENDING)
+  settledAt         DateTime?        @map("settled_at")
+  settlementAmount  BigInt?          @map("settlement_amount")
+  createdAt         DateTime         @default(now()) @map("created_at")
+
+  merchant          Merchant         @relation(fields: [merchantId], references: [id])
+  transaction       Transaction      @relation(fields: [transactionId], references: [id])
+
+  @@map("merchant_transactions")
+}
+
+// ============ PAYMENT INTENTS ============
+
+model PaymentIntent {
+  id              String                @id @default(uuid())
+  userId          String                @map("user_id")
+  amount          BigInt
+  gateway         String                @db.VarChar(50)
+  status          PaymentIntentStatus   @default(PENDING)
+  gatewayRef      String?               @map("gateway_reference") @db.VarChar(255)
+  expiresAt       DateTime             @map("expires_at")
+  completedAt      DateTime?            @map("completed_at")
+  createdAt       DateTime              @default(now()) @map("created_at")
+
+  transaction     Transaction?
+
+  @@map("payment_intents")
+}
+
+// ============ KYC DOCUMENTS ============
+
+model KYCDocument {
+  id               String    @id @default(uuid())
+  userId           String    @map("user_id")
+  docType          String    @map("doc_type") @db.VarChar(50)
+  fileUrl          String    @map("file_url")
+  status           KYCStatus @default(PENDING)
+  reviewedBy       String?   @map("reviewed_by")
+  reviewedAt       DateTime? @map("reviewed_at")
+  rejectionReason  String?   @map("rejection_reason") @db.Text
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("kyc_documents")
+}
+
+// ============ ADVISING CLEARANCES ============
+
+model AdvisingClearance {
+  id              String?              @id @default(uuid())
+  studentId       String               @unique @map("student_id")
+  semester        Int
+  clearedAt       DateTime?            @map("cleared_at")
+  blockedReason   String?              @map("blocked_reason") @db.Text
+  unblockedAt     DateTime?            @map("unblocked_at")
+  autoCleared     Boolean              @default(false) @map("auto_cleared")
+  createdAt       DateTime             @default(now()) @map("created_at")
+  updatedAt       DateTime             @updatedAt @map("updated_at")
+
+  student         User                 @relation(fields: [studentId], references: [id])
+
+  @@map("advising_clearances")
+}
+
+// ============ TUITION ============
+
+model TuitionRecord {
+  id                String   @id @default(uuid())
+  studentId         String   @map("student_id")
+  semester          Int
+  totalAmount       BigInt   @map("total_amount")
+  paidAmount        BigInt   @default(0) @map("paid_amount")
+  installmentsJson  Json?    @map("installments_json")
+  status            String   @default("PENDING")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  student           User     @relation(fields: [studentId], references: [id])
+  installments      Installment[]
+
+  @@map("tuition_records")
+}
+
+model Installment {
+  id                String    @id @default(uuid())
+  tuitionRecordId   String    @map("tuition_record_id")
+  installmentNo     Int       @map("installment_no")
+  amount            BigInt
+  dueDate           DateTime  @map("due_date") @db.Date
+  paidAt            DateTime? @map("paid_at")
+  transactionId     String?   @map("transaction_id")
+
+  tuitionRecord     TuitionRecord @relation(fields: [tuitionRecordId], references: [id], onDelete: Cascade)
+
+  @@map("installments")
+}
+
+// ============ NOTIFICATIONS ============
+
+model Notification {
+  id          String              @id @default(uuid())
+  userId      String              @map("user_id")
+  type        NotificationType
+  title       String              @db.VarChar(255)
+  message     String              @db.Text
+  channel     NotificationChannel
+  status      NotificationStatus   @default(PENDING)
+  readAt      DateTime?           @map("read_at")
+  sentAt      DateTime?           @map("sent_at")
+  createdAt   DateTime            @default(now()) @map("created_at")
+
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+// ============ SECURITY & AUDIT ============
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?  @map("user_id")
+  action      String   @db.VarChar(100)
+  entityType  String   @map("entity_type") @db.VarChar(50)
+  entityId    String?  @map("entity_id")
+  oldValue    Json?    @map("old_value")
+  newValue    Json?    @map("new_value")
+  ipAddress   String?  @map("ip_address") @db.VarChar(45)
+  userAgent    String?  @map("user_agent") @db.Text
+  timestamp   DateTime @default(now())
+
+  user        User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId, timestamp])
+  @@map("audit_logs")
+}
+
+model SecurityEvent {
+  id                String           @id @default(uuid())
+  userId            String?          @map("user_id")
+  eventType         SecurityEventType @map("event_type")
+  severity          SecuritySeverity
+  ipAddress         String?          @map("ip_address") @db.VarChar(45)
+  deviceFingerprint String?          @map("device_fingerprint")
+  metadata          Json?
+  timestamp         DateTime         @default(now())
+
+  user              User?            @relation(fields: [userId], references: [id])
+
+  @@index([userId, timestamp])
+  @@map("security_events")
+}
+
+model Session {
+  id              String    @id @default(uuid())
+  userId          String    @map("user_id")
+  refreshTokenHash String   @map("refresh_token_hash") @db.VarChar(64)
+  deviceInfo      String    @map("device_info") @db.VarChar(255)
+  ipAddress       String    @map("ip_address") @db.VarChar(45)
+  createdAt       DateTime  @default(now()) @map("created_at")
+  lastUsedAt      DateTime  @default(now()) @map("last_used_at")
+  revokedAt       DateTime? @map("revoked_at")
+
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model OTPRecord {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  otpHash      String   @map("otp_hash") @db.VarChar(64)
+  purpose      String   @db.VarChar(50)
+  expiresAt    DateTime @map("expires_at")
+  usedAt       DateTime? @map("used_at")
+  attemptCount Int      @default(0) @map("attempt_count")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("otp_records")
+}
+
+// ============ SUPPORT ============
+
+model SupportTicket {
+  id          String               @id @default(uuid())
+  userId      String               @map("user_id")
+  category    String               @db.VarChar(100)
+  subject     String               @db.VarChar(255)
+  description String               @db.Text
+  priority    SupportTicketPriority @default(MEDIUM)
+  status      SupportTicketStatus   @default(OPEN)
+  assignedTo  String?              @map("assigned_to")
+  resolvedAt  DateTime?            @map("resolved_at")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("support_tickets")
+}
+
+// ============ FINE APPEALS ============
+
+model FineAppeal {
+  id            String       @id @default(uuid())
+  fineId        String       @map("fine_id")
+  studentId     String       @map("student_id")
+  statement     String       @db.Text
+  evidenceUrls  String[]     @map("evidence_urls")
+  status        AppealStatus @default(PENDING)
+  reviewedBy    String?      @map("reviewed_by")
+  decision      String?
+  decisionNote  String?      @map("decision_note") @db.Text
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+
+  fine          Fine         @relation(fields: [fineId], references: [id])
+  student       User         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("fine_appeals")
+}
+
+// ============ FINE POLICY ============
+
+model FinePolicy {
+  id              String   @id @default(uuid())
+  libraryDailyRate BigInt   @default(500) @map("library_daily_rate") // 5 BDT = 500 paisa
+  gracePeriodDays  Int      @default(0) @map("grace_period_days")
+  maxFineCap      BigInt?  @map("max_fine_cap")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("fine_policies")
+}

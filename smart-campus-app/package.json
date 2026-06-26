@@ -1,0 +1,10 @@
+{
+  "name": "smart-campus-app",
+  "version": "1.0.0",
+  "description": "Smart Campus App - A Complete Student Portal & Digital Wallet for East West University",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ]
+}

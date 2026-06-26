@@ -1,0 +1,91 @@
+# ── Smart Campus App — Docker Compose ──────────────────────────
+# Usage: docker compose up -d
+# Requires: Create a .env file (see .env.example in each service)
+
+version: "3.9"
+
+services:
+  # ── PostgreSQL 16 Database ──────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: sc_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-campus}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-campus_dev_2024}
+      POSTGRES_DB: ${POSTGRES_DB:-smart_campus}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-campus}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis Cache ───────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: sc_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Backend API ──────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: sc_backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-campus}:${POSTGRES_PASSWORD:-campus_dev_2024}@postgres:5432/${POSTGRES_DB:-smart_campus}?schema=public
+      REDIS_URL: redis://redis:6379
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      OTP_HMAC_SECRET: ${OTP_HMAC_SECRET}
+      QR_HMAC_SECRET: ${QR_HMAC_SECRET}
+      EMAIL_USER: ${EMAIL_USER}
+      EMAIL_PASS: ${EMAIL_PASS}
+      SSLCOMMERZ_STORE_ID: ${SSLCOMMERZ_STORE_ID}
+      SSLCOMMERZ_PASSWORD: ${SSLCOMMERZ_PASSWORD}
+      BKASH_APP_KEY: ${BKASH_APP_KEY}
+      BKASH_APP_SECRET: ${BKASH_APP_SECRET}
+      NAGAD_MERCHANT_ID: ${NAGAD_MERCHANT_ID}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      sh -c "npx prisma migrate deploy && node dist/server.js"
+
+  # ── Frontend (Next.js) ────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: sc_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://backend:5000/api/v1
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  redis_data:

@@ -1,0 +1,16 @@
+node_modules
+dist
+.next
+.env
+.env.*
+!.env.example
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+.git
+.gitignore
+README.md
+.vscode
+coverage
+public/sw.js.map
