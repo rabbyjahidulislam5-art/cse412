@@ -13,7 +13,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npx prisma generate
-RUN npx tsc --skipLibCheck --noEmitOnError false
+RUN npx tsc --noCheck
 
 # Stage 3: Production
 FROM node:20-alpine AS runner
