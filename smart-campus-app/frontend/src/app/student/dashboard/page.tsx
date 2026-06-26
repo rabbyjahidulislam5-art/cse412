@@ -76,7 +76,7 @@ export default function StudentDashboard() {
             <h2 className="font-semibold text-gray-900">Recent Transactions</h2>
             <Link href="/student/wallet/history" className="text-sm text-blue-600 font-medium">View All</Link>
           </div>
-          {data?.recentTransactions?.length === 0 ? (
+          {(!data?.recentTransactions || data.recentTransactions.length === 0) ? (
             <p className="text-gray-400 text-sm text-center py-4">No transactions yet</p>
           ) : (
             <div className="space-y-3">
@@ -97,7 +97,7 @@ export default function StudentDashboard() {
 
         <div className="card">
           <h2 className="font-semibold text-gray-900 mb-4">Active Fines</h2>
-          {data?.activeFines?.length === 0 ? (
+          {(!data?.activeFines || data.activeFines.length === 0) ? (
             <div className="text-center py-8"><span className="text-4xl block mb-2">✅</span><p className="text-green-600 font-medium">No active fines!</p></div>
           ) : (
             <div className="space-y-3">

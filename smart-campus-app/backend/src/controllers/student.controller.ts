@@ -28,9 +28,15 @@ export class StudentController {
   // GET /api/v1/student/dashboard
   async getDashboard(req: AuthRequest, res: any) {
     const userId = req.user!.id;
-    const wallet = await prisma.wallet.findUnique({ where: { userId } });
+    let wallet = await prisma.wallet.findUnique({ where: { userId } });
+    
+    // Auto-create wallet if missing (for manually created users)
+    if (!wallet) {
+      wallet = await prisma.wallet.create({ data: { userId, balance: 0, status: 'ACTIVE' } });
+    }
+    
     const recentTx = await prisma.transaction.findMany({
-      where: { walletId: wallet!.id }, take: 5, orderBy: { createdAt: 'desc' },
+      where: { walletId: wallet.id }, take: 5, orderBy: { createdAt: 'desc' },
     });
     const activeFines = await prisma.fine.findMany({ where: { userId, status: 'ACTIVE' }, take: 10 });
     const clearance = await prisma.advisingClearance.findUnique({ where: { studentId: userId } });
