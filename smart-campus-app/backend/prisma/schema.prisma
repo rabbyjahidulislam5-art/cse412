@@ -455,7 +455,7 @@ model KYCDocument {
 // ============ ADVISING CLEARANCES ============
 
 model AdvisingClearance {
-  id              String?              @id @default(uuid())
+  id              String               @id @default(uuid())
   studentId       String               @unique @map("student_id")
   semester        Int
   clearedAt       DateTime?            @map("cleared_at")
