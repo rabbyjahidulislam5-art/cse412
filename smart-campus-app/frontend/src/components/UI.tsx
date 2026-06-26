@@ -1,6 +1,10 @@
 'use client';
 import { useState, useEffect, ReactNode } from 'react';
 
+export { default as Modal } from './Modal';
+export { ConfirmModal, SuccessModal } from './Modal';
+export { useToast } from './hooks';
+
 export function KPICard({ title, value, icon, trend, trendUp, color = 'blue' }: {
   title: string; value: string; icon: string; trend?: string; trendUp?: boolean; color?: string;
 }) {
