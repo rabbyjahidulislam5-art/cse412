@@ -30,8 +30,9 @@ export default function LoginPage() {
         else router.push('/student/dashboard');
       }
     } catch (err: any) {
-      const msg = err.response?.data?.error?.message;
-      setError(msg || 'Login failed');
+      console.error("LOGIN ERROR:", err);
+      const msg = err.response?.data?.error?.message || err.message || 'Login failed';
+      setError(msg);
     } finally { setLoading(false); }
   };
 
